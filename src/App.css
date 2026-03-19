@@ -1,0 +1,335 @@
+:root {
+  --bg-color: #ffffff;
+  --text-main: #1a1a1a;
+  --text-muted: #666666;
+  --accent: #4285f4;
+  --border-light: #e5e5e5;
+  --input-bg: #fdfdfd;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  
+  --code-bg: #1e1e1e;
+  --code-border: #333333;
+}
+
+* { margin:0; padding:0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* TOP BAR */
+.top-bar {
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+.menu-icon {
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* LANDING STATE (Centered) */
+.landing-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 20vh;
+}
+
+.logo-container {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Animated Logo Placeholder */
+.logo-icon {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #4285f4, #c58af9, #ffaaff);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 20px rgba(66, 133, 244, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-icon::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%); }
+  100% { transform: translateX(100%) translateY(100%); }
+}
+
+.landing-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #111;
+  letter-spacing: -0.02em;
+}
+
+/* PROMPT CONTAINER */
+.prompt-container-outer {
+  width: 100%;
+  max-width: 700px;
+  transition: all 0.4s ease;
+}
+
+.prompt-box {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 18px 24px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.prompt-box:focus-within {
+  border-color: #ccc;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.prompt-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 17px;
+  color: var(--text-main);
+  resize: none;
+  font-family: inherit;
+  min-height: 28px;
+  line-height: 1.5;
+}
+
+.prompt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-actions-left {
+  display: flex;
+  gap: 18px;
+  color: var(--text-muted);
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.icon-btn:hover { color: var(--text-main); }
+
+.send-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.send-btn.active {
+  color: var(--accent);
+}
+
+/* CHAT VIEW (Active) */
+.active-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 100px 20px 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chat-container {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.message-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #eee;
+}
+
+.ai-avatar { 
+  background: linear-gradient(135deg, #4285f4, #c58af9); 
+  color: white; 
+  border: none;
+}
+
+.message-content {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.user-message {
+  font-weight: 500;
+  color: #333;
+}
+
+/* RESULT CARD */
+.result-card {
+  margin-top: 25px;
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background-color: var(--code-bg);
+}
+
+.card-header {
+  height: 48px;
+  background-color: #252526;
+  border-bottom: 1px solid var(--code-border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-size: 13px;
+  color: #999;
+}
+
+.card-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 15px;
+}
+
+.mini-action-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  transition: color 0.2s;
+}
+
+.mini-action-btn:hover { color: #fff; }
+
+.mini-action-btn.success:hover { color: #4caf50; }
+
+.code-viewport {
+  overflow: auto;
+  max-height: 600px;
+}
+
+.code-viewport pre {
+  margin: 0 !important;
+  padding: 24px !important;
+  font-size: 14px !important;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  background: transparent !important;
+}
+
+/* FLOATING INPUT BOX */
+.floating-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, var(--bg-color) 70%, transparent);
+  padding: 40px 20px 30px;
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* FOOTER Copyright */
+.copyright {
+  position: absolute;
+  bottom: 15px;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* LOADING SHIMMER */
+.loading-box { width: 100%; }
+.shimmer-line {
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.spin { animation: rotation 1s infinite linear; }
+@keyframes rotation { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* MARKDOWN STYLING */
+.markdown-content p { margin-bottom: 15px; }
+.markdown-content ul, .markdown-content ol { margin-left: 20px; margin-bottom: 15px; }
