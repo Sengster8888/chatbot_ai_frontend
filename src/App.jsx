@@ -21,7 +21,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import './App.css';
 
-const API_URL = 'http://localhost:3000/api/chat';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/chat';
 
 function App() {
   const [messages, setMessages] = useState([]);
