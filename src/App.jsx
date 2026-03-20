@@ -11,6 +11,7 @@ import {
   User,
   Menu,
   MoreVertical,
+  Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -24,10 +25,21 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/chat';
 
 function App() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('chat_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to parse chat history", e);
+      return [];
+    }
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
   const messagesEndRef = useRef(null);
 
@@ -36,8 +48,22 @@ function App() {
   };
 
   useEffect(() => {
+    try {
+      localStorage.setItem('chat_history', JSON.stringify(messages));
+    } catch (e) {
+      console.error("Failed to save chat history", e);
+    }
     scrollToBottom();
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [isDarkMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,7 +94,7 @@ function App() {
 
   const getCodeBlocks = (content) => {
     const codeBlocks = [];
-    const regex = /```(\w+)?\n([\s\S]*?)```/g;
+    const regex = /```(\w+)?\s?\n?([\s\S]*?)```/g;
     let m;
     while ((m = regex.exec(content)) !== null) {
       codeBlocks.push({ lang: m[1]?.toLowerCase(), code: m[2] });
@@ -159,8 +185,25 @@ function App() {
   return (
     <div className="app-wrapper">
       <header className="top-bar">
-        <Menu className="menu-icon" size={20} />
-        <MoreVertical className="menu-icon" size={20} style={{marginLeft: 'auto'}} />
+        <div className="top-left">
+          <Menu className="menu-icon" size={20} />
+          <button 
+            className="new-chat-btn" 
+            onClick={() => { if(confirm('Start a new chat?')) { setMessages([]); setInput(''); } }}
+            title="Start fresh"
+          >
+            <Plus size={18} />
+            <span>New Chat</span>
+          </button>
+        </div>
+        <div className="top-actions">
+           <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
+             {isDarkMode ? <Sparkles size={20} fill="#fdd835" /> : <Sparkles size={20} />}
+           </button>
+           <button className="clear-chat" onClick={() => { if(confirm('Clear history?')) setMessages([]); }}>
+             <MoreVertical className="menu-icon" size={20} />
+           </button>
+        </div>
       </header>
 
       {isLanding ? (
@@ -224,7 +267,28 @@ function App() {
                 <div className="message-content">
                   <div className={m.role === 'user' ? 'user-message' : 'markdown-content'}>
                     {m.role === 'assistant' ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          pre: ({ children }) => {
+                            const codeText = React.Children.toArray(children).reduce((acc, child) => {
+                              return acc + (child.props?.children || '');
+                            }, '');
+                            return (
+                              <div className="markdown-pre-wrapper">
+                                <button 
+                                  className="markdown-copy-btn" 
+                                  onClick={() => handleCopy(codeText, codeText)}
+                                  title="Copy code"
+                                >
+                                  {copiedId === codeText ? <Check size={14} /> : <Copy size={14} />}
+                                </button>
+                                <pre>{children}</pre>
+                              </div>
+                            );
+                          }
+                        }}
+                      >
                         {m.content}
                       </ReactMarkdown>
                     ) : (
