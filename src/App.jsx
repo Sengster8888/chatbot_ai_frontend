@@ -22,7 +22,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/chat';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/chat';
 
 function App() {
   const [messages, setMessages] = useState(() => {
@@ -76,16 +76,61 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(API_URL, {
-        messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+        }),
       });
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: response.data.message }]);
+      if (!response.ok) throw new Error('Failed to connect to the server');
+
+      // Setup for streaming
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = '';
+
+      // Add an initial empty assistant message
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.replace('data: ', '').trim();
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.content) {
+                assistantMessage += data.content;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[updated.length - 1].content = assistantMessage;
+                  return updated;
+                });
+              } else if (data.error) {
+                throw new Error(data.details || data.error);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE chunk:', e);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => [
-         ...prev,
-        { role: 'assistant', content: 'Error: Could not reach the generator.' },
+        ...prev,
+        { role: 'assistant', content: `Error: ${error.message}` },
       ]);
     } finally {
       setIsLoading(false);
