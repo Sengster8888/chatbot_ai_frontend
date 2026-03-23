@@ -479,6 +479,35 @@ body.dark-mode .markdown-copy-btn:hover {
   background: #30363d;
 }
 
+.prompt-type-select {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.prompt-type-select:hover {
+  background: var(--input-bg);
+  border-color: #ccc;
+}
+
+body.dark-mode .prompt-type-select {
+  background: #1a1a1a;
+  border-color: #333;
+}
+
+body.dark-mode .prompt-type-select:hover {
+  background: #2c2c2c;
+  border-color: #444;
+}
+
 /* RESPONSIVENESS */
 @media (max-width: 768px) {
   .top-bar { padding: 15px 20px; }
@@ -499,9 +528,11 @@ body.dark-mode .markdown-copy-btn:hover {
   .mini-action-btn span { display: none; }
   .result-card { border-radius: 12px; }
   .markdown-copy-btn { opacity: 1; padding: 5px; }
+  .prompt-type-select { font-size: 11px; padding: 3px 6px; }
 }
 
 @media (max-width: 480px) {
   .landing-title { font-size: 20px; }
   .logo-icon { width: 50px; height: 50px; }
+  .footer-actions-left { gap: 10px; }
 }

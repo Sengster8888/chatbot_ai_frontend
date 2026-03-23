@@ -35,6 +35,7 @@ function App() {
     }
   });
   const [input, setInput] = useState('');
+  const [promptType, setPromptType] = useState('code');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -83,6 +84,7 @@ function App() {
         },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          type: promptType,
         }),
       });
 
@@ -285,10 +287,20 @@ function App() {
                   }
                 }}
               />
-              <div className="prompt-footer">
+                <div className="prompt-footer">
                 <div className="footer-actions-left">
                    <button type="button" className="icon-btn"><Sparkles size={18} /></button>
                    <button type="button" className="icon-btn"><Paperclip size={18} /></button>
+                   <select 
+                     className="prompt-type-select" 
+                     value={promptType} 
+                     onChange={(e) => setPromptType(e.target.value)}
+                   >
+                     <option value="ui">✨ Web UI</option>
+                     <option value="code">💻 Code</option>
+                     <option value="debug">🐞 Debug</option>
+                     <option value="explain">💡 Explain</option>
+                   </select>
                 </div>
                 <button 
                   type="submit" 
@@ -380,6 +392,16 @@ function App() {
                   <div className="footer-actions-left">
                      <button type="button" className="icon-btn"><Sparkles size={18} /></button>
                      <button type="button" className="icon-btn"><Paperclip size={18} /></button>
+                     <select 
+                       className="prompt-type-select" 
+                       value={promptType} 
+                       onChange={(e) => setPromptType(e.target.value)}
+                     >
+                       <option value="ui">✨ Web UI</option>
+                       <option value="code">💻 Code</option>
+                       <option value="debug">🐞 Debug</option>
+                       <option value="explain">💡 Explain</option>
+                     </select>
                   </div>
                   <button 
                     type="submit" 
