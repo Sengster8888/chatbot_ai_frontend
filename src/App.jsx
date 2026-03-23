@@ -20,6 +20,9 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+import documentIcon from './assets/document.png';
+import chatbotIcon from './assets/chatbot.png';
+
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/chat';
@@ -41,20 +44,31 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
+  const [streamingMessage, setStreamingMessage] = useState('');
 
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (instant = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: instant ? 'auto' : 'smooth',
+        block: 'end'
+      });
+    }
   };
 
   useEffect(() => {
+    scrollToBottom(isLoading); // Use instant scroll while loading for tighter lock
+  }, [messages, isLoading, streamingMessage]);
+
+  // Separate effect for saving history (optimization: don't save every chunk)
+  useEffect(() => {
+    if (isLoading) return; // Wait until loading is done to save full history
     try {
       localStorage.setItem('chat_history', JSON.stringify(messages));
     } catch (e) {
       console.error("Failed to save chat history", e);
     }
-    scrollToBottom();
   }, [messages, isLoading]);
 
   useEffect(() => {
@@ -94,37 +108,65 @@ function App() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
+      let buffer = '';
+      let queue = '';
+      let isProcessing = false;
 
-      // Add an initial empty assistant message
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+      const processQueue = () => {
+        if (queue.length === 0) {
+          isProcessing = false;
+          return;
+        }
+        
+        isProcessing = true;
+        const charsToProcess = Math.min(queue.length, Math.ceil(queue.length / 5) + 1);
+        const segment = queue.substring(0, charsToProcess);
+        queue = queue.substring(charsToProcess);
+        assistantMessage += segment;
+
+        setStreamingMessage(assistantMessage);
+
+        requestAnimationFrame(processQueue);
+      };
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        
+        if (done) {
+          const flushRemaining = setInterval(() => {
+            if (queue.length === 0) {
+              clearInterval(flushRemaining);
+              setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+              setStreamingMessage('');
+              setIsLoading(false);
+              return;
+            }
+            if (!isProcessing) processQueue();
+          }, 50);
+          break;
+        }
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.replace('data: ', '').trim();
-            if (dataStr === '[DONE]') break;
+          const trimmedLine = line.trim();
+          if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
 
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.content) {
-                assistantMessage += data.content;
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1].content = assistantMessage;
-                  return updated;
-                });
-              } else if (data.error) {
-                throw new Error(data.details || data.error);
-              }
-            } catch (e) {
-              console.error('Error parsing SSE chunk:', e);
+          const dataStr = trimmedLine.replace(/^data: /, '').trim();
+          if (dataStr === '[DONE]') break;
+
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.content) {
+              queue += data.content;
+              if (!isProcessing) processQueue();
+            } else if (data.error) {
+              throw new Error(data.details || data.error);
             }
+          } catch (e) {
+            console.error('SSE Error:', e);
           }
         }
       }
@@ -134,7 +176,7 @@ function App() {
         ...prev,
         { role: 'assistant', content: `Error: ${error.message}` },
       ]);
-    } finally {
+      setStreamingMessage('');
       setIsLoading(false);
     }
   };
@@ -248,7 +290,7 @@ function App() {
              {isDarkMode ? <Sparkles size={20} fill="#fdd835" /> : <Sparkles size={20} />}
            </button>
            <button className="clear-chat" onClick={() => { if(confirm('Clear history?')) setMessages([]); }}>
-             <MoreVertical className="menu-icon" size={20} />
+             <img src={documentIcon} alt="Clear history" className="menu-icon-img" title="Clear history" />
            </button>
         </div>
       </header>
@@ -261,7 +303,7 @@ function App() {
             className="logo-container"
           >
             <div className="logo-icon">
-              <Sparkles size={36} fill="white" />
+              <img src={chatbotIcon} alt="Logo" className="msg-avatar-img" />
             </div>
           </motion.div>
           <motion.h1 
@@ -270,7 +312,7 @@ function App() {
             transition={{ delay: 0.2 }}
             className="landing-title"
           >
-            Your Copilot for work
+            AlphaBot
           </motion.h1>
 
           <div className="prompt-container-outer">
@@ -319,7 +361,7 @@ function App() {
             {messages.map((m, i) => (
               <div key={i} className="message-row">
                 <div className={`avatar-circle ${m.role === 'assistant' ? 'ai-avatar' : ''}`}>
-                  {m.role === 'assistant' ? <Sparkles size={18} /> : <User size={18} />}
+                  {m.role === 'assistant' ? <img src={chatbotIcon} alt="AI" className="msg-avatar-img" /> : <User size={18} />}
                 </div>
                 <div className="message-content">
                   <div className={m.role === 'user' ? 'user-message' : 'markdown-content'}>
@@ -358,8 +400,25 @@ function App() {
                 </div>
               </div>
             ))}
+
+            {streamingMessage && (
+              <div className="message-row">
+                <div className="avatar-circle ai-avatar">
+                   <img src={chatbotIcon} alt="AI" className="msg-avatar-img" />
+                </div>
+                <div className="message-content">
+                  <div className="markdown-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {streamingMessage}
+                    </ReactMarkdown>
+                    <span className="typing-cursor" />
+                  </div>
+                  <CodeResult content={streamingMessage} messageIndex="streaming" />
+                </div>
+              </div>
+            )}
             
-            {isLoading && (
+            {isLoading && !streamingMessage && (
               <div className="message-row">
                 <div className="avatar-circle ai-avatar">
                    <Loader2 size={18} className="spin" />
