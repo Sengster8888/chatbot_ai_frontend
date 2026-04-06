@@ -93,7 +93,12 @@ function App() {
     setStreamingMessage('');
     setSelectedHistoryIndex(null);
 
-    const currentType = programmingLanguage === 'HTML/CSS' ? 'ui' : 'code';
+    let currentType = 'code';
+    if (programmingLanguage === 'HTML/CSS') {
+      currentType = 'ui';
+    } else if (programmingLanguage === 'Modern Game') {
+      currentType = 'game';
+    }
 
     try {
       const response = await fetch(API_URL, {
@@ -287,6 +292,7 @@ function App() {
                   <option>Python</option>
                   <option>JavaScript</option>
                   <option>HTML/CSS</option>
+                  <option>Modern Game</option>
                 </select>
                 <button 
                   className="generate-btn" 
